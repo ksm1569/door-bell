@@ -51,15 +51,30 @@ function getTempFilePath(videoId) {
   return path.join(tempDir, `${videoId}.mp3`);
 }
 
-// YouTube 비디오 ID 추출 함수
+// 비디오 ID 검증 강화 (악의적인 명령어 주입 방지)
 function extractVideoId(url) {
-  const parsedUrl = new URL(url);
-  if (parsedUrl.hostname === 'youtu.be') {
-    return parsedUrl.pathname.substring(1);
-  } else if (parsedUrl.searchParams.has('v')) {
-    return parsedUrl.searchParams.get('v');
+  try {
+    const parsedUrl = new URL(url);
+    if (parsedUrl.hostname === 'youtu.be') {
+      const videoId = parsedUrl.pathname.substring(1);
+      // 영숫자와 특정 문자만 허용 (명령어 주입 방지)
+      if (!/^[a-zA-Z0-9_-]+$/.test(videoId)) {
+        throw new Error('유효하지 않은 비디오 ID 형식');
+      }
+      return videoId;
+    } else if (parsedUrl.searchParams.has('v')) {
+      const videoId = parsedUrl.searchParams.get('v');
+      // 영숫자와 특정 문자만 허용 (명령어 주입 방지)
+      if (!/^[a-zA-Z0-9_-]+$/.test(videoId)) {
+        throw new Error('유효하지 않은 비디오 ID 형식');
+      }
+      return videoId;
+    }
+    throw new Error('YouTube 비디오 ID를 추출할 수 없습니다.');
+  } catch (error) {
+    console.error('비디오 ID 추출 실패:', error.message);
+    throw new Error('YouTube 비디오 ID를 추출할 수 없습니다: ' + error.message);
   }
-  throw new Error('YouTube 비디오 ID를 추출할 수 없습니다.');
 }
 
 async function playAudio(voiceChannel, youtubeUrl) {
@@ -112,8 +127,9 @@ async function playAudio(voiceChannel, youtubeUrl) {
       console.log('YouTube 오디오 다운로드 시작...');
       
       try {
-        // youtube-dl 명령어로 오디오 다운로드 (ffmpeg 필요)
-        const command = `yt-dlp -f 'ba' -x --audio-format mp3 --audio-quality 128K --max-filesize 10M "${validatedUrl}" -o "${outputPath}"`;
+        // youtube-dl 명령어로 오디오 다운로드 (명령어 주입 방지)
+        const sanitizedUrl = validatedUrl.replace(/[;&|`$()]/g, ''); // 특수 문자 제거
+        const command = `yt-dlp -f 'ba' -x --audio-format mp3 --audio-quality 128K --max-filesize 10M "${sanitizedUrl}" -o "${outputPath}"`;
         await execAsync(command);
         console.log('YouTube 오디오 다운로드 완료!');
       } catch (error) {
