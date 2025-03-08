@@ -1,0 +1,28 @@
+# 설정 파일
+config.json
+
+# 노드 모듈
+node_modules/
+
+# 로그 파일
+*.log
+
+# 환경 변수 파일
+.env
+
+# 기타 민감한 정보
+data/
+
+# 운영체제 파일
+.DS_Store
+Thumbs.db
+
+# 에디터 설정
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 임시 파일
+tmp/
+temp/ 
